@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import { RecipeImage } from "../components/RecipeCard.tsx";
+import { RecipeReview } from "../components/RecipeReview.tsx";
 import { RelatedRecipes } from "../components/RelatedRecipes.tsx";
 import { ErrorState, LoadingState } from "../components/RequestState.tsx";
 import { useRecipeRequest } from "../hooks/useRecipeRequest.ts";
@@ -8,17 +9,35 @@ import { getRecipeById } from "../services/recipeService.ts";
 export function RecipeDetailPage({
   recipeId,
   backHref,
+  canGoBack,
 }: {
   recipeId: number;
   backHref: string;
+  canGoBack: boolean;
 }) {
   const load = useCallback(() => getRecipeById(recipeId), [recipeId]);
   const { data: recipe, loading, error, retry } = useRecipeRequest(load);
   return (
     <>
-      <a className="back-link" href={backHref}>
-        ← 레시피 목록으로
-      </a>
+      <div className="detail-navigation">
+        <button
+          className="back-link back-button"
+          type="button"
+          onClick={() => {
+            if (canGoBack) {
+              window.history.back();
+            } else {
+              window.location.hash = backHref;
+            }
+          }}
+        >
+          ← 뒤로가기
+        </button>
+
+        <a className="back-link list-return-link" href={backHref}>
+          레시피 목록으로
+        </a>
+      </div>
       {loading && <LoadingState message="요리 정보를 불러오는 중입니다." />}
       {error && <ErrorState message={error} onRetry={retry} />}
       {recipe && (
@@ -130,6 +149,7 @@ export function RecipeDetailPage({
               </div>
             </dl>
           </section>
+          <RecipeReview recipeId={recipe.id} />
           <RelatedRecipes key={recipe.id} recipeId={recipe.id} />
         </>
       )}

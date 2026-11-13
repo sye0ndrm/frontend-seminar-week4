@@ -34,9 +34,8 @@ export function RecipeListPage({
   return (
     <>
       <section className="list-intro" aria-labelledby="list-heading">
-        <p className="eyebrow">오늘의 한 끼를 위한 작은 발견</p>
-        <h1 id="list-heading">오늘은 어떤 요리를 해볼까요?</h1>
-        <p>가볍게 준비하는 집밥부터 특별한 날의 한 접시까지.</p>
+        <h1 id="list-heading">레시피</h1>
+        <p>태그를 선택해 원하는 요리를 찾아보세요.</p>
       </section>
       {loading && <LoadingState message="레시피를 불러오는 중입니다." />}
       {error && <ErrorState message={error} onRetry={retry} />}
@@ -44,7 +43,7 @@ export function RecipeListPage({
         <>
           <section className="filter-section" aria-label="요리 태그 필터">
             <div className="filter-heading">
-              <h2>어떤 요리를 찾으세요?</h2>
+              <h2>태그</h2>
               <span>여러 개 선택할 수 있어요</span>
             </div>
             <div className="tag-filters">
@@ -66,6 +65,7 @@ export function RecipeListPage({
                   aria-pressed={tags.includes(tag)}
                   onClick={() => toggleTag(tag)}
                 >
+                  {tags.includes(tag) && <span aria-hidden="true">✓ </span>}
                   {tag}
                 </button>
               ))}

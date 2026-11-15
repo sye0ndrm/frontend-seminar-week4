@@ -8,27 +8,61 @@ function useHashRoute() {
   const [state, setState] = useState(() => {
     const hash = window.location.hash || "#/";
     const route = readRoute(hash);
+
     return {
       route,
       backHref: route.kind === "list" ? hash : "#/",
+      canGoBack: false,
     };
   });
+
   useEffect(() => {
+    const session = crypto.randomUUID();
+    let currentIndex = 0;
+
+    const stampEntry = (index: number) => {
+      window.history.replaceState(
+        {
+          ...window.history.state,
+          recipeNavigation: { session, index },
+        },
+        "",
+      );
+    };
+
+    stampEntry(0);
+
     const handleChange = () => {
+      const entry = window.history.state?.recipeNavigation;
+
+      if (entry?.session === session) {
+        currentIndex = entry.index;
+      } else {
+        currentIndex += 1;
+        stampEntry(currentIndex);
+      }
+
       const hash = window.location.hash || "#/";
       const route = readRoute(hash);
+
       setState((previous) => ({
         route,
         backHref: route.kind === "list" ? hash : previous.backHref,
+        canGoBack: currentIndex > 0,
       }));
     };
+
     window.addEventListener("hashchange", handleChange);
-    return () => window.removeEventListener("hashchange", handleChange);
+
+    return () => {
+      window.removeEventListener("hashchange", handleChange);
+    };
   }, []);
+
   return state;
 }
 function App() {
-  const { route, backHref } = useHashRoute();
+  const { route, backHref, canGoBack } = useHashRoute();
   const pageKey = route.kind === "detail" ? `recipe-${route.id}` : route.kind;
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -41,12 +75,14 @@ function App() {
       <header className="site-header">
         <div className="header-inner">
           <a className="brand" href="#/" aria-label="천개의 레시피 처음으로">
-            <span className="brand-mark" aria-hidden="true">
-              ✳
-            </span>
-            천개의 레시피
+            <img
+              className="brand-logo"
+              src="/recipe-logo.png"
+              alt="천개의 레시피"
+              width="1024"
+              height="338"
+            />
           </a>
-          <span className="header-caption">매일의 식탁에 작은 영감</span>
         </div>
       </header>
       <main id="main-content" className="site-main">
@@ -58,6 +94,7 @@ function App() {
             key={route.id}
             recipeId={route.id}
             backHref={backHref}
+            canGoBack={canGoBack}
           />
         )}
         {route.kind === "not-found" && (
@@ -73,7 +110,6 @@ function App() {
       </main>
       <footer className="site-footer">
         <p>천개의 레시피</p>
-        <span>오늘도 맛있는 하루 보내세요.</span>
       </footer>
     </>
   );

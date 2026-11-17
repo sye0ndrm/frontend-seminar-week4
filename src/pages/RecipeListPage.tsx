@@ -1,14 +1,13 @@
+import { useCallback } from "react";
 import { RecipeCard } from "../components/RecipeCard.tsx";
 import { ErrorState, LoadingState } from "../components/RequestState.tsx";
 import { useRecipeRequest } from "../hooks/useRecipeRequest.ts";
-import {
-  filterRecipes,
-  getPageCount,
-  getPageRecipes,
-  getTags,
-} from "../lib/recipes.ts";
 import { listHref } from "../lib/routes.ts";
-import { getAllRecipes } from "../services/recipeService.ts";
+import {
+  getRecipes,
+  getRecipeTags,
+  PAGE_SIZE,
+} from "../services/recipeService.ts";
 export function RecipeListPage({
   tags,
   page,
@@ -16,11 +15,20 @@ export function RecipeListPage({
   tags: string[];
   page: number;
 }) {
-  const { data, loading, error, retry } = useRecipeRequest(getAllRecipes);
-  const filtered = data ? filterRecipes(data, tags) : [];
-  const pageCount = getPageCount(filtered);
-  const currentPage = Math.min(page, pageCount);
-  const visible = getPageRecipes(filtered, currentPage);
+  const load = useCallback(
+    (signal: AbortSignal) => getRecipes(tags, page, signal),
+    [tags, page],
+  );
+  const { data, loading, error, retry } = useRecipeRequest(load);
+  const tagRequest = useRecipeRequest(getRecipeTags);
+  const pageCount = Math.max(1, Math.ceil((data?.total ?? 0) / PAGE_SIZE));
+  const currentPage = data ? Math.floor(data.skip / PAGE_SIZE) + 1 : page;
+  const visible = data?.recipes ?? [];
+  const firstPage = Math.max(1, Math.min(currentPage - 2, pageCount - 4));
+  const pageNumbers = Array.from(
+    { length: Math.min(5, pageCount) },
+    (_, index) => firstPage + index,
+  );
   const toggleTag = (tag: string) => {
     const next = tags.includes(tag)
       ? tags.filter((value) => value !== tag)
@@ -39,41 +47,47 @@ export function RecipeListPage({
       </section>
       {loading && <LoadingState message="레시피를 불러오는 중입니다." />}
       {error && <ErrorState message={error} onRetry={retry} />}
+      <section className="filter-section" aria-label="요리 태그 필터">
+        <div className="filter-heading">
+          <h2>태그</h2>
+          <span>여러 개 선택할 수 있어요</span>
+        </div>
+        <div className="tag-filters">
+          <button
+            type="button"
+            className={`filter-button ${tags.length === 0 ? "selected" : ""}`}
+            aria-pressed={tags.length === 0}
+            onClick={() => {
+              window.location.hash = listHref();
+            }}
+          >
+            전체
+          </button>
+          {tagRequest.data?.map((tag) => (
+            <button
+              key={tag}
+              type="button"
+              className={`filter-button ${tags.includes(tag) ? "selected" : ""}`}
+              aria-pressed={tags.includes(tag)}
+              onClick={() => toggleTag(tag)}
+            >
+              {tags.includes(tag) && <span aria-hidden="true">✓ </span>}
+              {tag}
+            </button>
+          ))}
+        </div>
+        {tagRequest.loading && (
+          <LoadingState message="태그를 불러오는 중입니다." />
+        )}
+        {tagRequest.error && (
+          <ErrorState message={tagRequest.error} onRetry={tagRequest.retry} />
+        )}
+      </section>
       {data && (
         <>
-          <section className="filter-section" aria-label="요리 태그 필터">
-            <div className="filter-heading">
-              <h2>태그</h2>
-              <span>여러 개 선택할 수 있어요</span>
-            </div>
-            <div className="tag-filters">
-              <button
-                type="button"
-                className={`filter-button ${tags.length === 0 ? "selected" : ""}`}
-                aria-pressed={tags.length === 0}
-                onClick={() => {
-                  window.location.hash = listHref();
-                }}
-              >
-                전체
-              </button>
-              {getTags(data).map((tag) => (
-                <button
-                  key={tag}
-                  type="button"
-                  className={`filter-button ${tags.includes(tag) ? "selected" : ""}`}
-                  aria-pressed={tags.includes(tag)}
-                  onClick={() => toggleTag(tag)}
-                >
-                  {tags.includes(tag) && <span aria-hidden="true">✓ </span>}
-                  {tag}
-                </button>
-              ))}
-            </div>
-          </section>
           <div className="results-heading" aria-live="polite">
             <p>
-              총 <strong>{filtered.length}</strong>개의 레시피
+              총 <strong>{data.total}</strong>개의 레시피
             </p>
             {tags.length > 0 && (
               <p className="filter-summary">
@@ -96,7 +110,7 @@ export function RecipeListPage({
               ))}
             </section>
           )}
-          {filtered.length > 0 && (
+          {data.total > 0 && (
             <nav className="pagination" aria-label="레시피 페이지 선택">
               <button
                 className="page-button page-direction"
@@ -108,12 +122,7 @@ export function RecipeListPage({
               >
                 이전
               </button>
-              {Array.from(
-                {
-                  length: pageCount,
-                },
-                (_, index) => index + 1,
-              ).map((number) => (
+              {pageNumbers.map((number) => (
                 <button
                   key={number}
                   type="button"

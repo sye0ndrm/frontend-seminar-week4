@@ -2,11 +2,15 @@ import type { PointerEvent as ReactPointerEvent } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRecipeRequest } from "../hooks/useRecipeRequest.ts";
 import { getRelatedRecipes } from "../services/recipeService.ts";
+import type { Recipe } from "../types/recipe.ts";
 import { RecipeCard } from "./RecipeCard.tsx";
 import { ErrorState, LoadingState } from "./RequestState.tsx";
 
-export function RelatedRecipes({ recipeId }: { recipeId: number }) {
-  const load = useCallback(() => getRelatedRecipes(recipeId), [recipeId]);
+export function RelatedRecipes({ recipe }: { recipe: Recipe }) {
+  const load = useCallback(
+    (signal: AbortSignal) => getRelatedRecipes(recipe, signal),
+    [recipe],
+  );
   const { data, loading, error, retry } = useRecipeRequest(load);
 
   const viewport = useRef<HTMLDivElement>(null);

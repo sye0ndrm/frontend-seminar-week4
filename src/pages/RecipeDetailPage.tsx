@@ -15,7 +15,10 @@ export function RecipeDetailPage({
   backHref: string;
   canGoBack: boolean;
 }) {
-  const load = useCallback(() => getRecipeById(recipeId), [recipeId]);
+  const load = useCallback(
+    (signal: AbortSignal) => getRecipeById(recipeId, signal),
+    [recipeId],
+  );
   const { data: recipe, loading, error, retry } = useRecipeRequest(load);
   return (
     <>
@@ -150,7 +153,7 @@ export function RecipeDetailPage({
             </dl>
           </section>
           <RecipeReview recipeId={recipe.id} />
-          <RelatedRecipes key={recipe.id} recipeId={recipe.id} />
+          <RelatedRecipes key={recipe.id} recipe={recipe} />
         </>
       )}
     </>

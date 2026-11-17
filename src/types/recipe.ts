@@ -32,3 +32,11 @@ export type Recipe = {
   /** 아침·점심·저녁 등 식사 유형 목록 */
   mealType: string[];
 };
+
+
+export type RecipeListResponse = {
+  recipes: Recipe[];
+  total: number;
+  skip: number;
+  limit: number;
+};

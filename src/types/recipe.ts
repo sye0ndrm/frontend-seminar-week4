@@ -33,7 +33,6 @@ export type Recipe = {
   mealType: string[];
 };
 
-
 export type RecipeListResponse = {
   recipes: Recipe[];
   total: number;

@@ -44,7 +44,8 @@ async function readPage(
 ): Promise<RecipeListResponse> {
   const skip = (page - 1) * PAGE_SIZE;
   const result = await requestPage(path, PAGE_SIZE, skip, signal);
-  const lastSkip = Math.max(0, Math.ceil(result.total / PAGE_SIZE) - 1) * PAGE_SIZE;
+  const lastSkip =
+    Math.max(0, Math.ceil(result.total / PAGE_SIZE) - 1) * PAGE_SIZE;
   return skip > lastSkip
     ? requestPage(path, PAGE_SIZE, lastSkip, signal)
     : result;
@@ -63,7 +64,9 @@ async function readAllForTag(
     skip += result.recipes.length;
     if (skip >= result.total) return recipes;
     if (result.recipes.length === 0) {
-      throw new Error("레시피 목록을 모두 불러오지 못했습니다. 다시 시도해 주세요.");
+      throw new Error(
+        "레시피 목록을 모두 불러오지 못했습니다. 다시 시도해 주세요.",
+      );
     }
   }
 }
@@ -111,7 +114,10 @@ export async function getRecipes(
   };
 }
 
-export function getRecipeById(id: number, signal?: AbortSignal): Promise<Recipe> {
+export function getRecipeById(
+  id: number,
+  signal?: AbortSignal,
+): Promise<Recipe> {
   return request(`/recipes/${id}`, signal);
 }
 
